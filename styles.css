@@ -180,3 +180,12 @@ table {
 .player-name {
   padding: 1rem;
 }
+
+#current-player {
+  background-color: white;
+  padding: 0.5rem;
+  margin: 1rem;
+  border-radius: 0.3rem;
+  font-size: larger;
+  font-weight: 800;
+}

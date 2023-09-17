@@ -1,11 +1,11 @@
 const TicTacToe = (() => {
+  const X = "X";
+  const O = "O";
   let divBoard;
-  let aiMode = false; // off = false, on = true
-  let p1 = true;
-  let p2 = false;
+  let aiMode = false;
+  let currentPlayer = X;
   let gameOver = false;
 
-  // gameboard grid
   let gameboard = [
     [null, null, null],
     [null, null, null],
@@ -17,189 +17,142 @@ const TicTacToe = (() => {
     clearGrid();
     renderGrid();
     attachEventListeners();
-    userInput();
-    gameOver = false; // Reset gameOver flag
-    p1 = true;
-    p2 = false;
+    gameOver = false;
+    currentPlayer = X;
   };
 
   const attachEventListeners = () => {
-    const modeButton = document.querySelector("#ai");
-    const resetButton = document.querySelector("#reset");
-
-    modeButton.removeEventListener("click", toggleAiMode);
-    resetButton.removeEventListener("click", reset);
-
-    modeButton.addEventListener("click", toggleAiMode);
-    resetButton.addEventListener("click", reset);
+    document.querySelector("#ai").addEventListener("click", toggleAiMode);
+    document.querySelector("#reset").addEventListener("click", initialize);
+    divBoard.addEventListener("click", handleCellClick);
   };
 
-  // Convert the randomly chosen index to x and y values
-  const convert1Dto2D = (num) => {
-    let x = Math.floor(num / 3);
-    let y = num % 3;
-    return { x, y };
-  };
-
-  // Switch mode between Human and AI
   const toggleAiMode = () => {
     aiMode = !aiMode;
   };
 
   const switchPlayer = () => {
-    p1 = !p1;
-    p2 = !p2;
+    currentPlayer = currentPlayer === X ? O : X;
   };
 
-  // Render divs that make up the grid
   const renderGrid = () => {
-    for (let i = 0; i < gameboard.length; i++) {
-      for (let j = 0; j < gameboard[i].length; j++) {
-        const divCell = document.createElement("div");
-        divCell.classList.add("cell");
-        divBoard.appendChild(divCell);
-      }
+    for (let i = 0; i < 9; i++) {
+      const divCell = document.createElement("div");
+      divCell.classList.add("cell");
+      divBoard.appendChild(divCell);
     }
   };
 
   const clearGrid = () => {
-    for (let i = 0; i < gameboard.length; i++) {
-      for (let j = 0; j < gameboard[i].length; j++) {
-        gameboard[i][j] = null;
-      }
-    }
-
-    let divToDelete = divBoard.lastElementChild;
-    while (divToDelete) {
-      divBoard.removeChild(divToDelete);
-      divToDelete = divBoard.lastElementChild;
+    gameboard = gameboard.map((row) => row.fill(null));
+    while (divBoard.firstChild) {
+      divBoard.removeChild(divBoard.firstChild);
     }
   };
 
-  const announceWinnerAndReset = (winnerString) => {
-    setTimeout(() => initialize(), 800);
-    setTimeout(() => alert(`Winner is ${winnerString[0]}`), 800);
+  const announceWinnerAndReset = (winner) => {
+    setTimeout(initialize, 800);
+    setTimeout(() => alert(`Winner is ${winner}`), 800);
     gameOver = true;
   };
 
-  const endGame = () => {
-    let winnerStrings = ["", "", "", ""];
-
-    for (let i = 0; i < gameboard.length; i++) {
-      for (let j = 0, m = 2; j < gameboard[i].length; j++, m--) {
-        winnerStrings[0] += gameboard[i][j]; // Row
-        winnerStrings[1] += gameboard[j][i]; // Column
-        winnerStrings[2] += gameboard[j][j]; // Diagonal1
-        winnerStrings[3] += gameboard[j][m]; // Diagonal2
+  const checkWinner = () => {
+    // Check rows, columns, and diagonals
+    for (let i = 0; i < 3; i++) {
+      if (
+        gameboard[i][0] === gameboard[i][1] &&
+        gameboard[i][1] === gameboard[i][2] &&
+        gameboard[i][0]
+      ) {
+        announceWinnerAndReset(gameboard[i][0]);
+        return true;
       }
-
-      for (const winnerString of winnerStrings) {
-        if (winnerString === "XXX" || winnerString === "OOO") {
-          announceWinnerAndReset(winnerString);
-          return true;
-        }
+      if (
+        gameboard[0][i] === gameboard[1][i] &&
+        gameboard[1][i] === gameboard[2][i] &&
+        gameboard[0][i]
+      ) {
+        announceWinnerAndReset(gameboard[0][i]);
+        return true;
       }
-
-      // Reset winnerStrings for the next iteration
-      winnerStrings = ["", "", "", ""];
+    }
+    if (
+      gameboard[0][0] === gameboard[1][1] &&
+      gameboard[1][1] === gameboard[2][2] &&
+      gameboard[0][0]
+    ) {
+      announceWinnerAndReset(gameboard[0][0]);
+      return true;
+    }
+    if (
+      gameboard[0][2] === gameboard[1][1] &&
+      gameboard[1][1] === gameboard[2][0] &&
+      gameboard[0][2]
+    ) {
+      announceWinnerAndReset(gameboard[0][2]);
+      return true;
     }
 
-    // Check for a tie by counting the used cells directly
-    const isBoardFull = gameboard
-      .flat()
-      .every((cell) => cell === "X" || cell === "O");
-
-    if (isBoardFull) {
+    // Check for a tie
+    if (gameboard.flat().every((cell) => cell === X || cell === O)) {
       setTimeout(() => alert(`It's a tie!`), 800);
-      setTimeout(() => initialize(), 800);
+      setTimeout(initialize, 800);
       gameOver = true;
-      return true; // End the game here as well
+      return true;
     }
 
     return false;
   };
 
-  const reset = () => {
-    gameboard = [
-      [null, null, null],
-      [null, null, null],
-      [null, null, null],
-    ];
-    initialize();
-  };
+  const handleCellClick = (event) => {
+    if (gameOver) return;
+    const index = Array.from(divBoard.children).indexOf(event.target);
+    const row = Math.floor(index / 3);
+    const col = index % 3;
 
-  const userInput = () => {
-    const cells = Array.from(document.querySelectorAll(".cell"));
-    cells.forEach((cell, index) => {
-      cell.addEventListener("click", () => {
-        if (gameOver) return;
+    if (gameboard[row][col] || !event.target.classList.contains("cell")) return;
 
-        if (p1 && !cell.textContent) {
-          cell.textContent = "X";
-          gameboard[Math.floor(index / 3)][index % 3] = "X";
-          if (!endGame()) {
-            if (!aiMode) {
-              switchPlayer();
-            } else {
-              p1 = false;
-              p2 = false;
-              computerPlayer(cell);
-            }
-          }
-        } else if (p2 && !cell.textContent) {
-          cell.textContent = "O";
-          gameboard[Math.floor(index / 3)][index % 3] = "O";
-          if (!endGame()) {
-            switchPlayer();
-          }
-        }
-      });
-    });
-  };
+    gameboard[row][col] = currentPlayer;
+    event.target.textContent = currentPlayer;
 
-  const computerPlayer = (cell) => {
-    let availableIndices = [];
-    let flatGameboard = gameboard.flat(2);
-    let randomIndex;
-    let positionToPlay;
-
-    for (let i = 0; i < flatGameboard.length; i++) {
-      if (flatGameboard[i] === null) {
-        availableIndices.push(i);
+    if (!checkWinner()) {
+      switchPlayer();
+      if (aiMode && currentPlayer === O) {
+        computerPlay();
       }
-      console.log(`Available: ${availableIndices}`);
+    }
+  };
+
+  const computerPlay = () => {
+    const availableCells = gameboard
+      .flatMap((row, i) => {
+        return row.map((cell, j) => {
+          if (cell === null) {
+            return { row: i, col: j };
+          }
+          return null;
+        });
+      })
+      .filter((cell) => cell !== null);
+
+    if (availableCells.length === 0) {
+      checkWinner();
+      return;
     }
 
-    if (availableIndices.length === 0) {
-      endGame();
+    const randomCell =
+      availableCells[Math.floor(Math.random() * availableCells.length)];
+    gameboard[randomCell.row][randomCell.col] = O;
+
+    const index = randomCell.row * 3 + randomCell.col;
+    divBoard.children[index].textContent = O;
+
+    if (!checkWinner()) {
+      switchPlayer();
     }
-
-    // Generate random playable index from availableIndices
-    randomIndex =
-      availableIndices[Math.floor(Math.random() * availableIndices.length)];
-
-    // Convert the randomly chosen index to x and y values
-    const points = convert1Dto2D(randomIndex);
-
-    // Plot the O in the Gamboard array
-    gameboard[points.x][points.y] = "O";
-
-    // Reset available indices
-    availableIndices = [];
-
-    // Plot the O in the UI
-    cell.parentNode.children[randomIndex].textContent = "O";
-
-    if (!endGame()) {
-      p1 = true;
-    }
-
-    return true;
   };
 
   return { initialize };
 })();
 
-document.addEventListener("DOMContentLoaded", () => {
-  const init = TicTacToe.initialize();
-});
+document.addEventListener("DOMContentLoaded", TicTacToe.initialize);
